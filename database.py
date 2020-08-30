@@ -31,7 +31,11 @@ class ExpancesDB():
         self.cursor.execute("""DELETE FROM homeexpances WHERE ID=?""", (index))
         self.__connection.commit()
 
-    
+    def search(self, description):
+        self.cursor.execute(
+            '''SELECT * FROM homeexpances WHERE description LIKE ?''', (description,))
+        self.__connection.commit()
+
 
     
 

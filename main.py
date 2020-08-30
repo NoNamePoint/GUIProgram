@@ -3,6 +3,16 @@ from tkinter import ttk
 from tkinter import messagebox
 from database import ExpancesDB
 
+# метод который вычисляет ширину и высоту экрана и автоматом центрирует главное окно приложения
+def center_win(win):
+        win.update_idletasks()
+        width = win.winfo_width()
+        height = win.winfo_height()
+        x = (win.winfo_screenwidth()//2 - (width//2))
+        y = (win.winfo_screenheight()//2 - (height//2))
+        win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+
 class Main(tk.Frame):
 
     def __init__(self, root):
@@ -11,8 +21,7 @@ class Main(tk.Frame):
         self.__db = ExpancesDB()
         self.init_main()
         self.view_records()
-
-
+    
     #главное окно
     def init_main(self):
         self.add_img = tk.PhotoImage(file="images/add.png")
@@ -53,9 +62,13 @@ class Main(tk.Frame):
 
     def add_records(self, *fields):
         """Функция выполняет валидацию поля на пустое значение, добавляет данные в БД и выводит значения в виджет treeview(см. функцию view_record)"""
-        if all(fields): 
-            self.__db.insert_data(*fields)
-            self.view_records()
+        *_, entry_expance_sum = fields
+        if all(fields):
+            if entry_expance_sum.isdigit(): 
+                self.__db.insert_data(*fields)
+                self.view_records()
+            else:
+                messagebox.showwarning(u'Внимание', message='Поле с суммой должно состять из цифр!')
         else:
             messagebox.showerror(u'Error', message=u'Заполните поля')
     
@@ -95,7 +108,15 @@ class Main(tk.Frame):
             self.tree.delete(element)
             self.__db.delete(index)
 
-         
+    def search_records(self, description):
+        description = '%' + description + '%'
+        self.__db.search(description)
+        [self.tree.delete(i) for i in self.tree.get_children()] 
+        [self.tree.insert('', 'end', values=row) for row in self.__db.cursor.fetchall()]
+        
+
+
+  
     def open_addexpance(self):
         AddExpance()
 
@@ -118,7 +139,7 @@ class AddExpance(tk.Toplevel):
     def __init__(self):
         super().__init__(root) 
         self.title(u"Добавить расход/доход")
-        self.geometry('400x220+400+300')
+        self.center_win()
         self.resizable(False, False)
         self.rvbar = tk.StringVar()
         self.rvbar.set(u'Доход')
@@ -157,11 +178,18 @@ class AddExpance(tk.Toplevel):
         self.button_accept.place(x = 100, y = 150)
         self.button_cancel = tk.Button(self, text = u"Отменить", command = self.destroy)
         self.button_cancel.place(x = 200,  y = 150)
-        
+
         self.grab_set()
         self.focus_set()
         # self.wait_window()
 
+    def center_win(self):
+        self.update_idletasks()
+        width = self.winfo_width()+150
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth()//2 - (width//2))
+        y = (self.winfo_screenheight()//2 - (height//2))
+        self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
 
 class UpdateExpance(AddExpance):
     def __init__(self):
@@ -179,19 +207,24 @@ class Search(tk.Toplevel):
     def __init__(self):
         super().__init__(root)
         self.title(u"Поиск")
-        self.geometry('400x220+400+300')
+        self.view = app
+        self.geometry('300x120+593+332')
         self.resizable(False, False)
         search_field_name = tk.Label(self, text=u"Что ищем?")
-        search_field_name.place (x = 175, y = 50)
-        search_field = tk.Entry(self)
-        search_field.place(x= 150, y=70)
-
+        search_field_name.place (x = 50, y = 35)
+        self.search_field = tk.Entry(self)
+        self.search_field.place(x= 130, y=37, width = 150)
+        self.button_accept = tk.Button(self, text=u"Найти", command=lambda: self.view.search_records(self.search_field.get()))
+        self.button_accept.place(x=75, y=65, width = 75)
+        self.button_cancel = tk.Button(self, text=u"Отменить", command=self.destroy)
+        self.button_cancel.place(x=170,  y=65)
+    
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = Main(root)
     root.title(u"Мои финансы")
-    root.geometry("650x450+300+200")
+    center_win(root)
     root.resizable(False, False)
     root.mainloop()
 
